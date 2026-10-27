@@ -6,10 +6,10 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.drawable.Icon;
 import android.media.AudioAttributes;
 import android.media.RingtoneManager;
 import android.net.Uri;
+import android.widget.RemoteViews;
 
 /** Уведомления: вопрос «Чем занят?» и отбой. */
 public final class Notifier {
@@ -59,19 +59,41 @@ public final class Notifier {
         PendingIntent pi = PendingIntent.getActivity(c, 10, open,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
+        RemoteViews small = new RemoteViews(c.getPackageName(), R.layout.notif_ask_small);
+        RemoteViews big = new RemoteViews(c.getPackageName(), R.layout.notif_ask_big);
+        big.setTextViewText(R.id.title, title);
+        bindButtons(c, small);
+        bindButtons(c, big);
+
         Notification n = new Notification.Builder(c, CH_ASK)
                 .setSmallIcon(R.drawable.ic_notify)
                 .setContentTitle(title)
-                .setContentText("Нажми, чтобы ответить")
+                .setContentText("📱 🎮 🧹 ❤️ 💻")
                 .setCategory(Notification.CATEGORY_REMINDER)
                 .setContentIntent(pi)
                 .setFullScreenIntent(pi, true)
                 .setAutoCancel(true)
-                .addAction(action(c, "phone", "📱 Телефон", 21))
-                .addAction(action(c, "games", "🎮 Игры", 22))
-                .addAction(action(c, "project", "💻 Учёба", 23))
+                .setStyle(new Notification.DecoratedCustomViewStyle())
+                .setCustomContentView(small)
+                .setCustomBigContentView(big)
+                .setCustomHeadsUpContentView(big)
                 .build();
         notify(c, ID_ASK, n);
+    }
+
+    private static void bindButtons(Context c, RemoteViews rv) {
+        int[] ids = {R.id.btn_phone, R.id.btn_games, R.id.btn_chores, R.id.btn_girl, R.id.btn_project};
+        for (int i = 0; i < ids.length; i++) {
+            rv.setOnClickPendingIntent(ids[i], answerIntent(c, Answers.KEYS[i], 21 + i));
+        }
+    }
+
+    private static PendingIntent answerIntent(Context c, String key, int req) {
+        Intent i = new Intent(c, AnswerReceiver.class)
+                .setAction(AnswerReceiver.ACTION)
+                .putExtra(AnswerReceiver.EXTRA, key);
+        return PendingIntent.getBroadcast(c, req, i,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
 
     public static void showBedtime(Context c) {
@@ -91,16 +113,6 @@ public final class Notifier {
                 .setAutoCancel(true)
                 .build();
         notify(c, ID_BED, n);
-    }
-
-    private static Notification.Action action(Context c, String key, String title, int req) {
-        Intent i = new Intent(c, AnswerReceiver.class)
-                .setAction(AnswerReceiver.ACTION)
-                .putExtra(AnswerReceiver.EXTRA, key);
-        PendingIntent pi = PendingIntent.getBroadcast(c, req, i,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-        return new Notification.Action.Builder(
-                Icon.createWithResource(c, R.drawable.ic_notify), title, pi).build();
     }
 
     private static void notify(Context c, int id, Notification n) {
