@@ -203,11 +203,17 @@ public class MainActivity extends Activity {
         root.addView(test);
 
         TextView tip = Ui.text(this,
-                "Совет: на Xiaomi, Samsung, Huawei включи для «Фокус» автозапуск и отключи "
-                        + "экономию батареи, иначе напоминания могут опаздывать.",
+                "Необязательно: если напоминания будут опаздывать или пропадать, "
+                        + "сними для «Фокус» ограничение батареи.",
                 13, Ui.MUTED, false);
         tip.setPadding(0, Ui.dp(this, 16), 0, 0);
         root.addView(tip);
+        PowerManager pm = getSystemService(PowerManager.class);
+        if (pm != null && !pm.isIgnoringBatteryOptimizations(getPackageName())) {
+            root.addView(Ui.smallButton(this, "Не ограничивать в фоне (необязательно)", 0xFF37474F,
+                    v -> open(new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                            Uri.parse("package:" + getPackageName())))));
+        }
     }
 
     private void buildPermissions() {
@@ -225,12 +231,7 @@ public class MainActivity extends Activity {
         if (Build.VERSION.SDK_INT >= 34 && nm != null) {
             fullOk = nm.canUseFullScreenIntent();
         }
-        boolean batteryOk = true;
-        PowerManager pm = getSystemService(PowerManager.class);
-        if (pm != null) {
-            batteryOk = pm.isIgnoringBatteryOptimizations(pkg);
-        }
-        if (notifOk && exactOk && fullOk && batteryOk) {
+        if (notifOk && exactOk && fullOk) {
             return;
         }
 
@@ -250,11 +251,6 @@ public class MainActivity extends Activity {
         if (!fullOk && Build.VERSION.SDK_INT >= 34) {
             card.addView(Ui.smallButton(this, "Разрешить окно на весь экран", Ui.WARN, v -> open(
                     new Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT,
-                            Uri.parse("package:" + pkg)))));
-        }
-        if (!batteryOk) {
-            card.addView(Ui.smallButton(this, "Не ограничивать в фоне (батарея)", Ui.WARN, v -> open(
-                    new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
                             Uri.parse("package:" + pkg)))));
         }
         root.addView(card);
