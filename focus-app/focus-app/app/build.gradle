@@ -10,11 +10,25 @@ android {
         applicationId "com.focus.app"
         minSdk 26
         targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        versionCode 2
+        versionName "1.1"
+    }
+
+    signingConfigs {
+        focus {
+            storeFile file('focus.jks')
+            storePassword 'focusapp'
+            keyAlias 'focus'
+            keyPassword 'focusapp'
+        }
     }
 
     buildTypes {
+        debug {
+            if (file('focus.jks').exists()) {
+                signingConfig signingConfigs.focus
+            }
+        }
         release {
             minifyEnabled false
         }
