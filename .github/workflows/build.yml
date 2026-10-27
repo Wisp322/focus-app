@@ -25,6 +25,19 @@ jobs:
         with:
           gradle-version: '8.9'
 
+      - name: Signing key cache
+        uses: actions/cache@v4
+        with:
+          path: focus-app/focus-app/app/focus.jks
+          key: focus-signing-key-v1
+
+      - name: Create signing key if missing
+        run: |
+          if [ ! -f app/focus.jks ]; then
+            keytool -genkeypair -keystore app/focus.jks -storepass focusapp -keypass focusapp \
+              -alias focus -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Focus App"
+          fi
+
       - name: Build
         run: gradle assembleDebug --no-daemon --stacktrace
 
